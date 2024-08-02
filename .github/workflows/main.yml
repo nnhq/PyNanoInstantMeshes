@@ -32,8 +32,7 @@ jobs:
         choco install visualstudio2019-workload-vctools -y
 
     - name: Build wheels
-      run: |
-        python -m cibuildwheels --platform windows --output-dir wheelhouse
+      run: python -m cibuildwheel --output-dir wheelhouse
         
     - uses: actions/upload-artifact@v4
       with: 
