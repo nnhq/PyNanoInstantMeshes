@@ -8,14 +8,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ windows-2019, windows-latest]
+        os: [ windows-latest]
 
     steps:
       - uses: actions/checkout@v3
 
       # Used to host cibuildwheel
-      - uses: actions/setup-python@v3
-
+      #- uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
+        name: Install Python
+        with:
+          python-version: "3.10"
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.10.2
 
