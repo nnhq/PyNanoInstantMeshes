@@ -1,27 +1,52 @@
-[project]
-name = "PyNIM"
-version = "0.0.2"
-description = "Python binding for instant meshes"
-readme = "README.md"
-requires-python = ">=3.8"
-authors = [
-    { name = "Mark Boss", email = "hello@markboss.me" },
-]
-classifiers = [
-    "License :: BSD",
-]
-# Optional: runtime dependency specification
+name: Build Windows x64 Wheels
 
-[build-system]
-requires = ["scikit-build-core >=0.4.3", "nanobind >=2.0.0"]
-build-backend = "scikit_build_core.build"
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+  workflow_dispatch:
 
-[tool.scikit-build]
-# Protect the configuration against future changes in scikit-build-core
-minimum-version = "0.4"
+jobs:
+  build:
+    runs-on: windows-latest
 
-# Setuptools-style build caching in a local directory
-build-dir = "build/{wheel_tag}"
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-# Build stable ABI wheels for CPython 3.12+
-wheel.py-api = "cp312"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel nanobind>=2.0.0 numpy scikit-build-core>=0.4.3 cibuildwheel==2.19.2
+
+    - name: Install C++ build tools
+      run: |
+        choco install visualstudio2019-workload-vctools -y
+
+    - name: Build wheels
+      run: |
+        python -m cibuildwheels --platform windows --output-dir wheelhouse
+        
+    - uses: actions/upload-artifact@v4
+      with: 
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+        
+    - name: Upload wheels to GitHub Release
+      if: github.event_name == 'release' && github.event.action == 'published'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./wheelhouse/*.whl
+        asset_name: $(basename ./wheelhouse/*.whl)
+        asset_content_type: application/zip
