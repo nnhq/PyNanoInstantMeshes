@@ -1,7 +1,13 @@
 name: Build Windows x64 Wheels
 
-on:  [push, pull_request, workflow_dispatch]
-
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,7 +25,7 @@ jobs:
     - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools wheel nanobind numpy 
+        pip install setuptools wheel nanobind>=2.0.0 numpy scikit-build-core>=0.4.3 cibuildwheel==2.19.2
 
     - name: Install C++ build tools
       run: |
@@ -27,14 +33,20 @@ jobs:
 
     - name: Build wheels
       run: |
-        python setup.py bdist_wheel
-
+        python -m cibuildwheels --platform windows --output-dir wheelhouse
+        
+    - uses: actions/upload-artifact@v4
+      with: 
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+        
     - name: Upload wheels to GitHub Release
+      if: github.event_name == 'release' && github.event.action == 'published'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./dist/*.whl
-        asset_name: $(basename ./dist/*.whl)
+        asset_path: ./wheelhouse/*.whl
+        asset_name: $(basename ./wheelhouse/*.whl)
         asset_content_type: application/zip
