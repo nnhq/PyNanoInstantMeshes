@@ -1,13 +1,13 @@
 name: Build Windows x64 Wheels
 
-on:
-  push:
+on1:
+  push1:
     branches: [ main ]
-  pull_request:
+  pull_request1:
     branches: [ main ]
-  release:
+  release1:
     types: [published]
-  workflow_dispatch:
+  workflow_dispatch1:
 
 jobs:
   build:
